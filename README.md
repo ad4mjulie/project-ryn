@@ -1,8 +1,8 @@
-# Ryn 🎙️
+# Ryn 
 
 A local, sarcastic AI voice assistant. No cloud STT, no cloud TTS, no bullshit.
 
-Ryn lives on a Google Nest Mini via Bluetooth and talks to you like a real person — not a product.
+Ryn lives on a Google Nest Mini via Bluetooth and talks to you.
 
 ## Stack
 

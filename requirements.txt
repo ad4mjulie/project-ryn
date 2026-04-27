@@ -7,3 +7,5 @@ sounddevice==0.4.6
 numpy<2.0.0
 pyaudio==0.2.14
 soundfile==0.12.1
+# torch must be installed first from pytorch.org index (kokoro requires >= 2.4):
+# pip install "torch>=2.4.0" --index-url https://download.pytorch.org/whl/cpu

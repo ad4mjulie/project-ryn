@@ -2,14 +2,13 @@ import os
 import json
 import re
 import time
-import queue
-import threading
 import numpy as np
 import sounddevice as sd
 import speech_recognition as sr
 import google.generativeai as genai
 from dotenv import load_dotenv
 from kokoro import KPipeline
+from faster_whisper import WhisperModel
 
 # --- CONFIGURATION & SETUP ---
 load_dotenv()
@@ -29,6 +28,15 @@ try:
 except Exception as e:
     print(f"❌ Error initializing Kokoro: {e}")
     print("Make sure 'espeak-ng' is installed: brew install espeak-ng")
+    exit(1)
+
+# Whisper STT setup — faster-whisper (prebuilt wheels, no LLVM/numba needed)
+# Downloads the tiny model (~75MB) on first run, then cached locally
+try:
+    whisper_model = WhisperModel("tiny", device="cpu", compute_type="int8")
+    print("✅ Whisper tiny model loaded.")
+except Exception as e:
+    print(f"❌ Error loading Whisper model: {e}")
     exit(1)
 
 HISTORY_FILE = "chat_history.json"
@@ -180,9 +188,12 @@ def main():
                 audio = recognizer.listen(source, timeout=None, phrase_time_limit=15)
             
             print("(Transcribing...)")
-            # Using Whisper tiny locally via SpeechRecognition
-            # This requires openai-whisper package
-            transcript = recognizer.recognize_whisper(audio, model="tiny").strip()
+            # Convert raw audio bytes to float32 numpy array for faster-whisper.
+            # SpeechRecognition captures 16kHz 16-bit PCM — exactly what Whisper wants.
+            audio_bytes = audio.get_wav_data(convert_rate=16000, convert_width=2)
+            audio_np = np.frombuffer(audio_bytes, dtype=np.int16).astype(np.float32) / 32768.0
+            segments, _ = whisper_model.transcribe(audio_np, language="en", beam_size=1)
+            transcript = " ".join(seg.text for seg in segments).strip()
             
             if not transcript:
                 continue

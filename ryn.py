@@ -2,12 +2,12 @@ import os
 import json
 import re
 import time
+import urllib.request
 import numpy as np
 import sounddevice as sd
 import speech_recognition as sr
 import google.generativeai as genai
 from dotenv import load_dotenv
-from huggingface_hub import hf_hub_download
 from kokoro_onnx import Kokoro
 from faster_whisper import WhisperModel
 
@@ -23,15 +23,29 @@ if not GEMINI_API_KEY:
 genai.configure(api_key=GEMINI_API_KEY)
 
 # Kokoro ONNX TTS setup — uses onnxruntime, no PyTorch needed
-# Downloads model files from HuggingFace on first run (~310MB), cached forever after
+# Model files are downloaded from GitHub releases on first run, then cached locally
+KOKORO_DIR = os.path.expanduser("~/.cache/kokoro-onnx")
+ONNX_PATH = os.path.join(KOKORO_DIR, "kokoro-v1.0.onnx")
+VOICES_PATH = os.path.join(KOKORO_DIR, "voices-v1.0.bin")
+ONNX_URL = "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx"
+VOICES_URL = "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin"
+
+def download_file(url, dest):
+    """Download a file with progress indicator."""
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    print(f"Downloading {os.path.basename(dest)}...")
+    urllib.request.urlretrieve(url, dest)
+    print(f"✅ {os.path.basename(dest)} saved.")
+
 try:
-    print("Loading Kokoro TTS model (first run downloads ~310MB)...")
-    _onnx_path = hf_hub_download("hexgrad/Kokoro-82M", "kokoro-v0_19.onnx")
-    _voices_path = hf_hub_download("hexgrad/Kokoro-82M", "voices.bin")
-    tts = Kokoro(_onnx_path, _voices_path)
+    if not os.path.exists(ONNX_PATH):
+        download_file(ONNX_URL, ONNX_PATH)
+    if not os.path.exists(VOICES_PATH):
+        download_file(VOICES_URL, VOICES_PATH)
+    tts = Kokoro(ONNX_PATH, VOICES_PATH)
     print("✅ Kokoro TTS ready.")
 except Exception as e:
-    print(f"❌ Error initializing Kokoro: {e}")
+    print(f"❌ Error initializing Kokoro TTS: {e}")
     exit(1)
 
 # Whisper STT setup — faster-whisper (prebuilt wheels, no LLVM/numba needed)

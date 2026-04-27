@@ -1,0 +1,17 @@
+# Environment & secrets
+.env
+chat_history.json
+
+# Virtual environment
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# macOS
+.DS_Store
+
+# Whisper & model caches
+*.pt

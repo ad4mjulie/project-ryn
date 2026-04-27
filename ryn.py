@@ -7,7 +7,8 @@ import sounddevice as sd
 import speech_recognition as sr
 import google.generativeai as genai
 from dotenv import load_dotenv
-from kokoro import KPipeline
+from huggingface_hub import hf_hub_download
+from kokoro_onnx import Kokoro
 from faster_whisper import WhisperModel
 
 # --- CONFIGURATION & SETUP ---
@@ -21,13 +22,16 @@ if not GEMINI_API_KEY:
 
 genai.configure(api_key=GEMINI_API_KEY)
 
-# Kokoro TTS setup
+# Kokoro ONNX TTS setup — uses onnxruntime, no PyTorch needed
+# Downloads model files from HuggingFace on first run (~310MB), cached forever after
 try:
-    # 'a' for American English, using am_onyx for a fitting sarcastic vibe
-    pipeline = KPipeline(lang_code='a')
+    print("Loading Kokoro TTS model (first run downloads ~310MB)...")
+    _onnx_path = hf_hub_download("hexgrad/Kokoro-82M", "kokoro-v0_19.onnx")
+    _voices_path = hf_hub_download("hexgrad/Kokoro-82M", "voices.bin")
+    tts = Kokoro(_onnx_path, _voices_path)
+    print("✅ Kokoro TTS ready.")
 except Exception as e:
     print(f"❌ Error initializing Kokoro: {e}")
-    print("Make sure 'espeak-ng' is installed: brew install espeak-ng")
     exit(1)
 
 # Whisper STT setup — faster-whisper (prebuilt wheels, no LLVM/numba needed)
@@ -97,18 +101,16 @@ def save_history(history):
         print(f"⚠️ Warning: Could not save history: {e}")
 
 def speak(text):
-    """Generates and plays audio using Kokoro and sounddevice."""
+    """Generates and plays audio using kokoro-onnx and sounddevice."""
     if not text.strip():
         return
     
     print(f"Ryn: {text}")
     try:
-        # Generate audio chunks
-        generator = pipeline(text, voice='am_onyx', speed=1.0)
-        for _, _, audio in generator:
-            # Play each chunk immediately
-            sd.play(audio, samplerate=24000)
-            sd.wait()
+        # kokoro-onnx returns a numpy float32 array + sample rate (24000 Hz)
+        samples, sample_rate = tts.create(text, voice="am_onyx", speed=1.0, lang="en-us")
+        sd.play(samples, samplerate=sample_rate)
+        sd.wait()
     except Exception as e:
         print(f"❌ TTS Error: {e}")
 

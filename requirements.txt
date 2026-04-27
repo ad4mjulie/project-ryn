@@ -1,11 +1,9 @@
 SpeechRecognition==3.10.4
 faster-whisper==1.1.1
 google-generativeai==0.8.3
-kokoro>=0.4.0
+kokoro-onnx
 python-dotenv==1.0.1
 sounddevice==0.4.6
 numpy<2.0.0
 pyaudio==0.2.14
 soundfile==0.12.1
-# torch must be installed first from pytorch.org index (kokoro requires >= 2.4):
-# pip install "torch>=2.4.0" --index-url https://download.pytorch.org/whl/cpu

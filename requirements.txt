@@ -1,6 +1,5 @@
 SpeechRecognition==3.10.4
-# openai-whisper must be installed separately from git:
-# pip install git+https://github.com/openai/whisper.git
+faster-whisper==1.1.1
 google-generativeai==0.8.3
 kokoro>=0.4.0
 python-dotenv==1.0.1

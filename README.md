@@ -31,12 +31,7 @@ source venv/bin/activate
 pip install torch --index-url https://download.pytorch.org/whl/cpu
 ```
 
-### 4. Install Whisper (from source — required due to setuptools 82 incompatibility)
-```bash
-pip install git+https://github.com/openai/whisper.git
-```
-
-### 5. Install the rest
+### 4. Install Python packages
 ```bash
 pip install -r requirements.txt
 ```
